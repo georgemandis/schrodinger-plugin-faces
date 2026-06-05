@@ -1,0 +1,16 @@
+[package]
+name = "schrodinger-plugin-faces"
+version = "0.1.0"
+edition = "2021"
+description = "Face blur/redact plugin for Schrödinger"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+schrodinger-plugin-sdk = { git = "https://github.com/georgemandis/schrodinger-plugin-sdk" }
+loupe-rs = { git = "https://github.com/georgemandis/loupe-rs" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tempfile = "3"
