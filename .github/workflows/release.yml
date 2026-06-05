@@ -1,0 +1,73 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-14
+            target: aarch64-apple-darwin
+            platform: macos-arm64
+          - os: macos-13
+            target: x86_64-apple-darwin
+            platform: macos-x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            platform: windows-x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package (unix)
+        if: runner.os != 'Windows'
+        run: |
+          PLUGIN_ID=$(jq -r .id plugin.json)
+          VERSION=$(jq -r .version plugin.json)
+          mkdir -p staging/lib
+          cp plugin.json staging/
+          cp target/${{ matrix.target }}/release/*.dylib staging/lib/ 2>/dev/null || true
+          cp target/${{ matrix.target }}/release/*.so staging/lib/ 2>/dev/null || true
+          cd staging
+          tar czf ../${PLUGIN_ID}-${VERSION}-${{ matrix.platform }}.tar.gz .
+
+      - name: Package (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $json = Get-Content plugin.json | ConvertFrom-Json
+          $id = $json.id
+          $ver = $json.version
+          New-Item -ItemType Directory -Force -Path staging/lib
+          Copy-Item plugin.json staging/
+          Copy-Item target/${{ matrix.target }}/release/*.dll staging/lib/
+          cd staging
+          tar czf ../${id}-${ver}-${{ matrix.platform }}.tar.gz .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: "*.tar.gz"
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: "*.tar.gz"
