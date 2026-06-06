@@ -17,6 +17,9 @@ jobs:
           - os: macos-13
             target: x86_64-apple-darwin
             platform: macos-x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            platform: windows-x86_64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +41,19 @@ jobs:
           cp target/${{ matrix.target }}/release/*.so staging/lib/ 2>/dev/null || true
           cd staging
           tar czf ../${PLUGIN_ID}-${VERSION}-${{ matrix.platform }}.tar.gz .
+
+      - name: Package (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $json = Get-Content plugin.json | ConvertFrom-Json
+          $id = $json.id
+          $ver = $json.version
+          New-Item -ItemType Directory -Force -Path staging/lib
+          Copy-Item plugin.json staging/
+          Copy-Item target/${{ matrix.target }}/release/*.dll staging/lib/
+          cd staging
+          tar czf ../${id}-${ver}-${{ matrix.platform }}.tar.gz .
 
       - uses: actions/upload-artifact@v4
         with:
