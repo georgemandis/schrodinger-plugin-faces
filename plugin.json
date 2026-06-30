@@ -7,7 +7,6 @@
   "type": "native",
   "entry": {
     "macos-arm64": "lib/libschrodinger_plugin_faces.dylib",
-    "macos-x86_64": "lib/libschrodinger_plugin_faces.dylib",
     "linux-x86_64": "lib/libschrodinger_plugin_faces.so",
     "windows-x86_64": "lib/schrodinger_plugin_faces.dll"
   },
