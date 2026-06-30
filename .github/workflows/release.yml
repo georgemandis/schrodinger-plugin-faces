@@ -33,12 +33,28 @@ jobs:
       - name: Package (unix)
         if: runner.os != 'Windows'
         run: |
+          set -euo pipefail
           PLUGIN_ID=$(jq -r .id plugin.json)
           VERSION=$(jq -r .version plugin.json)
           mkdir -p staging/lib
           cp plugin.json staging/
           cp target/${{ matrix.target }}/release/*.dylib staging/lib/ 2>/dev/null || true
           cp target/${{ matrix.target }}/release/*.so staging/lib/ 2>/dev/null || true
+
+          # Bundle libloupe (the loupe-rs build script emits it into the build
+          # script's OUT_DIR under a non-deterministic hash dir, so glob for it).
+          LOUPE=$(find target/${{ matrix.target }}/release/build -path '*loupe-rs-*/out/libloupe.dylib' | head -n1)
+          if [ -n "$LOUPE" ]; then
+            cp "$LOUPE" staging/lib/libloupe.dylib
+            # Add an rpath so the plugin's @rpath/libloupe.dylib resolves next to it.
+            # Target the staged plugin dylib directly rather than reconstructing its name.
+            PLUGIN_DYLIB=$(find staging/lib -name 'libschrodinger_plugin_*.dylib' | head -n1)
+            install_name_tool -add_rpath @loader_path "$PLUGIN_DYLIB"
+          else
+            echo "ERROR: libloupe.dylib not found in build output" >&2
+            exit 1
+          fi
+
           cd staging
           tar czf ../${PLUGIN_ID}-${VERSION}-${{ matrix.platform }}.tar.gz .
 
@@ -52,6 +68,17 @@ jobs:
           New-Item -ItemType Directory -Force -Path staging/lib
           Copy-Item plugin.json staging/
           Copy-Item target/${{ matrix.target }}/release/*.dll staging/lib/
+
+          # Bundle loupe.dll next to the plugin DLL (Windows resolves dependent
+          # DLLs from the same directory, so no rpath is needed).
+          $loupe = Get-ChildItem -Recurse -Path target/${{ matrix.target }}/release/build -Filter loupe.dll |
+            Where-Object { $_.FullName -like '*loupe-rs-*\out\loupe.dll' } | Select-Object -First 1
+          if ($null -eq $loupe) {
+            Write-Error "loupe.dll not found in build output"
+            exit 1
+          }
+          Copy-Item $loupe.FullName staging/lib/
+
           cd staging
           tar czf ../${id}-${ver}-${{ matrix.platform }}.tar.gz .
 

@@ -1,20 +1,30 @@
 {
-    "id": "faces",
-    "name": "Faces",
-    "version": "0.1.0",
-    "description": "Blur or redact faces in images",
-    "author": "georgemandis",
-    "type": "native",
-    "entry": {
-        "macos-arm64": "lib/libschrodinger_plugin_faces.dylib",
-        "macos-x86_64": "lib/libschrodinger_plugin_faces.dylib",
-        "linux-x86_64": "lib/libschrodinger_plugin_faces.so",
-        "windows-x86_64": "lib/schrodinger_plugin_faces.dll"
+  "id": "faces",
+  "name": "Faces",
+  "version": "0.1.1",
+  "description": "Blur or redact faces in images",
+  "author": "georgemandis",
+  "type": "native",
+  "entry": {
+    "macos-arm64": "lib/libschrodinger_plugin_faces.dylib",
+    "macos-x86_64": "lib/libschrodinger_plugin_faces.dylib",
+    "linux-x86_64": "lib/libschrodinger_plugin_faces.so",
+    "windows-x86_64": "lib/schrodinger_plugin_faces.dll"
+  },
+  "platforms": [
+    "macos",
+    "windows"
+  ],
+  "modes": [
+    {
+      "id": "blur",
+      "label": "Blur",
+      "default": true
     },
-    "platforms": ["macos", "windows"],
-    "modes": [
-        { "id": "blur", "label": "Blur", "default": true },
-        { "id": "redact", "label": "Redact" }
-    ],
-    "config": {}
+    {
+      "id": "redact",
+      "label": "Redact"
+    }
+  ],
+  "config": {}
 }
